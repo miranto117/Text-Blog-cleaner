@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PP Text outils</title>
+</head>
+<body>
+    <h1>Text Blog cleaner</h1>
+    <form id="cleanForm" onsubmit="return false;">
+        <label for="rawText">Texte brut :</label><br />
+        <textarea id="rawText" rows="10" cols="60" placeholder="Collez votre texte ici..."></textarea><br /><br />
+        
+        <button type="button" onclick="nettoyer()">Nettoyer le texte</button><br /><br />
+        
+        <label for="cleanText">Texte propre :</label><br />
+        <textarea id="cleanText" rows="10" cols="60" readonly placeholder="Le texte nettoyé apparaîtra ici..."></textarea>
+    </form>
+
+    <script>
+    function nettoyer() {
+        const rawHtml = document.getElementById('rawText').value;
+        const cleanedHtml = cleanHtml(rawHtml);
+        document.getElementById('cleanText').value = cleanedHtml;
+    }
+
+    function cleanHtml(html) {
+        const container = document.createElement('div');
+        container.innerHTML = html;
+
+        // Supprimer tous les <span> en gardant leur contenu
+        container.querySelectorAll('span').forEach(span => {
+            while (span.firstChild) {
+                span.parentNode.insertBefore(span.firstChild, span);
+            }
+            span.remove();
+        });
+
+        // Remplacer tous les <b> par <strong>
+        container.querySelectorAll('b').forEach(b => {
+            const strong = document.createElement('strong');
+            while (b.firstChild) {
+                strong.appendChild(b.firstChild);
+            }
+            b.parentNode.replaceChild(strong, b);
+        });
+
+        return container.innerHTML;
+    }
+    </script>
+</body>
+</html>
