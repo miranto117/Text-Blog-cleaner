@@ -1,52 +1,267 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>PP Text outils</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Éditeur HTML & Nettoyeur</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background-color: #f7f7f8;
+    }
+
+    .main-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    .editor-pane, .tool-pane {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .editor-pane {
+      background-color: #fff;
+      border-right: 1px solid #ddd;
+    }
+
+    .tool-pane {
+      background-color: #fefefe;
+    }
+
+    #editor, #codeEditor {
+      width: 100%;
+      min-height: 300px;
+      padding: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 0.5rem;
+      font-family: monospace;
+    }
+
+    #editor {
+      resize: vertical;
+    }
+
+    .preview-box {
+      border: 1px solid #ccc;
+      border-radius: 0.5rem;
+      padding: 1rem;
+      background-color: #fff;
+      min-height: 300px;
+    }
+
+    .chat-title {
+      font-size: 1.6rem;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    textarea {
+      width: 100%;
+      border-radius: 0.5rem;
+      padding: 0.75rem;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      border-radius: 0.5rem;
+    }
+
+    label {
+      font-weight: 500;
+      margin-top: 1rem;
+      display: block;
+    }
+  </style>
 </head>
 <body>
-    <h1>Text Blog cleaner</h1>
+<div class="main-container">
+  <!-- ÉDITEUR CLASSIQUE AVEC TABS -->
+  <div class="editor-pane">
+    <div class="chat-title">📝 Éditeur HTML</div>
+
+    <ul class="nav nav-tabs" id="editorTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="visual-tab" data-bs-toggle="tab" data-bs-target="#visual" type="button" role="tab">Visuel</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="code-tab" data-bs-toggle="tab" data-bs-target="#code" type="button" role="tab">Code HTML</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="preview-tab" data-bs-toggle="tab" data-bs-target="#preview" type="button" role="tab">Prévisualisation</button>
+      </li>
+    </ul>
+
+    <div class="tab-content mt-3" id="editorTabsContent">
+      <div class="tab-pane fade show active" id="visual" role="tabpanel">
+        <div contenteditable="true" id="editor" class="form-control" placeholder="Collez ici votre texte Word ou HTML..."></div>
+      </div>
+      <div class="tab-pane fade" id="code" role="tabpanel">
+        <textarea id="codeEditor" rows="12" placeholder="Éditez le code HTML ici..."></textarea>
+      </div>
+      <div class="tab-pane fade" id="preview" role="tabpanel">
+        <div class="preview-box" id="previewBox">Prévisualisation du HTML...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OUTIL DE NETTOYAGE -->
+  <div class="tool-pane">
+    <div class="chat-title">🧹 Nettoyeur HTML + Configuration</div>
     <form id="cleanForm" onsubmit="return false;">
-        <label for="rawText">Texte brut :</label><br />
-        <textarea id="rawText" rows="10" cols="60" placeholder="Collez votre texte ici..."></textarea><br /><br />
-        
-        <button type="button" onclick="nettoyer()">Nettoyer le texte</button><br /><br />
-        
-        <label for="cleanText">Texte propre :</label><br />
-        <textarea id="cleanText" rows="10" cols="60" readonly placeholder="Le texte nettoyé apparaîtra ici..."></textarea>
+      <button type="button" class="btn btn-outline-secondary mb-2" data-bs-toggle="modal" data-bs-target="#configModal">
+        ➕ Ajouter une règle (balise + classe)
+      </button>
+      <ul id="rulesList" class="list-group mb-3"></ul>
+      <button type="button" class="btn btn-success mb-4" onclick="appliquerClasses()">✅ Appliquer les classes</button>
+
+      <label for="rawText">Texte brut (HTML) :</label>
+      <textarea id="rawText" rows="6"></textarea>
+      <button class="btn btn-primary mt-2" type="button" onclick="nettoyer()">Nettoyer le texte</button>
+
+      <label for="cleanText" class="mt-4">Texte propre :</label>
+      <textarea id="cleanText" rows="6" readonly></textarea>
+      <button class="btn btn-secondary mt-2" type="button" onclick="copierTexte()">📋 Copier le texte</button>
     </form>
+  </div>
+</div>
 
-    <script>
-    function nettoyer() {
-        const rawHtml = document.getElementById('rawText').value;
-        const cleanedHtml = cleanHtml(rawHtml);
-        document.getElementById('cleanText').value = cleanedHtml;
+<!-- MODAL CONFIG -->
+<div class="modal fade" id="configModal" tabindex="-1" aria-labelledby="configModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Ajouter une règle de style</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="modalBalise" class="form-control mb-2" placeholder="Balise (ex: p, div)" />
+        <input type="text" id="modalClasse" class="form-control" placeholder="Classe CSS à ajouter" />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+        <button type="button" class="btn btn-primary" onclick="ajouterRegle()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const rules = [];
+
+  // Synchroniser les vues
+  document.getElementById('code-tab').addEventListener('click', () => {
+    document.getElementById('codeEditor').value = document.getElementById('editor').innerHTML.trim();
+  });
+
+  document.getElementById('visual-tab').addEventListener('click', () => {
+    document.getElementById('editor').innerHTML = document.getElementById('codeEditor').value.trim();
+  });
+
+  document.getElementById('preview-tab').addEventListener('click', () => {
+    document.getElementById('previewBox').innerHTML = document.getElementById('editor').innerHTML.trim();
+  });
+
+  function nettoyer() {
+    const html = document.getElementById('editor').innerHTML;
+    document.getElementById('rawText').value = html;
+
+    const cleanedHtml = cleanHtml(html);
+    document.getElementById('cleanText').value = cleanedHtml;
+  }
+
+  function cleanHtml(html) {
+    const container = document.createElement('div');
+    container.innerHTML = html;
+
+    container.querySelectorAll('span').forEach(span => {
+      while (span.firstChild) {
+        span.parentNode.insertBefore(span.firstChild, span);
+      }
+      span.remove();
+    });
+
+    container.querySelectorAll('b').forEach(b => {
+      const strong = document.createElement('strong');
+      while (b.firstChild) {
+        strong.appendChild(b.firstChild);
+      }
+      b.parentNode.replaceChild(strong, b);
+    });
+
+    return container.innerHTML;
+  }
+
+  function copierTexte() {
+    const cleanText = document.getElementById('cleanText');
+    cleanText.select();
+    cleanText.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    alert("Texte copié !");
+  }
+
+  function ajouterRegle() {
+    const balise = document.getElementById('modalBalise').value.trim();
+    const classe = document.getElementById('modalClasse').value.trim();
+    if (!balise || !classe) {
+      alert("Remplissez les deux champs.");
+      return;
     }
+    rules.push({ balise, classe });
+    majListeRegles();
+    document.getElementById('modalBalise').value = '';
+    document.getElementById('modalClasse').value = '';
+    bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
+  }
 
-    function cleanHtml(html) {
-        const container = document.createElement('div');
-        container.innerHTML = html;
+  function majListeRegles() {
+    const list = document.getElementById('rulesList');
+    list.innerHTML = '';
+    rules.forEach((rule, index) => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.textContent = `<${rule.balise}> → .${rule.classe}`;
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-sm btn-danger';
+      btn.textContent = '✖';
+      btn.onclick = () => {
+        rules.splice(index, 1);
+        majListeRegles();
+      };
+      li.appendChild(btn);
+      list.appendChild(li);
+    });
+  }
 
-        // Supprimer tous les <span> en gardant leur contenu
-        container.querySelectorAll('span').forEach(span => {
-            while (span.firstChild) {
-                span.parentNode.insertBefore(span.firstChild, span);
-            }
-            span.remove();
-        });
+  function appliquerClasses() {
+    const cleanTextArea = document.getElementById('cleanText');
+    const container = document.createElement('div');
+    container.innerHTML = cleanTextArea.value;
 
-        // Remplacer tous les <b> par <strong>
-        container.querySelectorAll('b').forEach(b => {
-            const strong = document.createElement('strong');
-            while (b.firstChild) {
-                strong.appendChild(b.firstChild);
-            }
-            b.parentNode.replaceChild(strong, b);
-        });
+    rules.forEach(rule => {
+      const elements = container.querySelectorAll(rule.balise);
+      elements.forEach(el => {
+        el.classList.add(rule.classe);
+      });
+    });
 
-        return container.innerHTML;
-    }
-    </script>
+    cleanTextArea.value = container.innerHTML;
+  }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
+
